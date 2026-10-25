@@ -1,0 +1,15 @@
+langchain-core
+langchain-groq
+langchain-community
+langgraph
+langfuse
+chromadb
+faiss-cpu
+sentence-transformers
+numpy
+pydantic
+python-dotenv
+streamlit
+tqdm
+requests
+pytest

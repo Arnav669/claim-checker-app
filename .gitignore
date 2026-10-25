@@ -1,0 +1,7 @@
+.env
+__pycache__/
+*.pyc
+storage/
+data/scifact/
+reports/
+.pytest_cache/

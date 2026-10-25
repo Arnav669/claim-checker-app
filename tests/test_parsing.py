@@ -45,3 +45,35 @@ def test_parse_route():
     assert parse_route("OTHER") == "other"
     assert parse_route("CLAIM") == "claim"
     assert parse_route("something else") == "claim"
+
+
+def test_think_block_is_ignored_even_with_braces_inside():
+    text = '<think>Maybe {"verdict": "REFUTED"} hmm</think>\n{"verdict": "SUPPORTED", "reasoning": "r", "citations": ["P1"]}'
+    assert parse_verdict(text).label == "SUPPORTED"
+
+
+def test_reasoning_without_opening_tag_is_dropped():
+    text = 'I should check the passages. </think> {"verdict": "REFUTED", "reasoning": "r", "citations": ["P2"]}'
+    assert parse_verdict(text).label == "REFUTED"
+
+
+def test_unterminated_think_block_gives_no_verdict():
+    assert parse_verdict('<think>still thinking {"verdict": "SUPPORTED"}') is None
+
+
+def test_prose_with_braces_before_json_is_handled():
+    text = 'Use the format {like this}. Final: {"verdict": "NOT_ENOUGH_INFO", "citations": []}'
+    assert parse_verdict(text).label == "NOT_ENOUGH_INFO"
+
+
+def test_nested_objects_return_the_outer_object():
+    assert extract_json('prefix {"a": {"b": 1}} suffix') == {"a": {"b": 1}}
+
+
+def test_last_top_level_object_wins():
+    assert extract_json('{"a": 1} then {"a": 2}') == {"a": 2}
+
+
+def test_route_and_queries_ignore_reasoning():
+    assert parse_route("<think>the user asks why</think>FOLLOWUP") == "followup"
+    assert parse_queries('<think>ideas</think>{"queries": ["x"]}', "claim") == ["x"]

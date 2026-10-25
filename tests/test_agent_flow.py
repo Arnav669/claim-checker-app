@@ -116,3 +116,31 @@ def test_clear_resets_session(tmp_path):
     agent.ask("a", IN_DOMAIN_CLAIM)
     agent.clear("a")
     assert agent.ask("a", "why?").route == "other"
+
+
+def make_reasoning_agent(tmp_path):
+    embedder = HashEmbedder()
+    store = FaissStore(tmp_path / "faiss")
+    build_index(sample_docs(), embedder, store, 100, 10)
+    settings = replace(get_settings(), rerank_top_n=3, gate_min_score=0.3, max_retries=1)
+    llm = FakeLLM(SUPPORTED_REPLY, followup_reply="The first passage states it directly.", think=True)
+    graph = FactCheckGraph(Retriever(embedder, store, 5), OverlapReranker(), llm.runnable, settings)
+    return FactCheckAgent(graph, SessionMemory(4)), llm
+
+
+def test_reasoning_model_output_still_yields_grounded_verdict(tmp_path):
+    agent, _ = make_reasoning_agent(tmp_path)
+    result = agent.check_claim(IN_DOMAIN_CLAIM)
+    assert result.label == "SUPPORTED"
+    assert result.abstained is False
+    assert result.sources[0].doc_id == "1"
+
+
+def test_reasoning_model_routing_and_followup_reply_are_clean(tmp_path):
+    agent, _ = make_reasoning_agent(tmp_path)
+    first = agent.ask("r1", IN_DOMAIN_CLAIM)
+    assert first.route == "claim"
+    second = agent.ask("r1", "why?")
+    assert second.route == "followup"
+    assert second.text == "The first passage states it directly."
+    assert "<think>" not in second.text

@@ -36,12 +36,25 @@ Every component is passed in through constructors (`factcheck/factory.py` does t
 
 ## Setup
 
+macOS / Linux:
+
 ```
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env
 ```
+
+Windows (PowerShell):
+
+```
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+copy .env.example .env
+```
+
+If PowerShell refuses to run the activation script, run `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` once and retry. The prompt should show `(.venv)` before you run `pip install`; if it does not, the packages are going into your global Python.
 
 Edit `.env` and set `GROQ_API_KEY`. Check the current model id on the Groq console models page and set `GROQ_MODEL` if the default is not listed. LangFuse keys are optional; without them tracing is switched off.
 

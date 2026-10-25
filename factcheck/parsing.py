@@ -6,7 +6,10 @@ from typing import Optional
 
 from factcheck.schemas import LABELS, NOT_ENOUGH_INFO, REFUTED, SUPPORTED, Verdict
 
-_FENCE = re.compile(r"```(?:json)?\s*(.*?)```", re.S)
+_THINK_BLOCK = re.compile(r"<think>.*?</think>", re.S | re.I)
+_THINK_OPEN_TAIL = re.compile(r"<think>.*\Z", re.S | re.I)
+_THINK_CLOSE = re.compile(r"</think>", re.I)
+_DECODER = json.JSONDecoder()
 
 _LABEL_ALIASES = {
     "SUPPORT": SUPPORTED,
@@ -21,23 +24,36 @@ _LABEL_ALIASES = {
 }
 
 
+def strip_reasoning(text: str) -> str:
+    text = _THINK_BLOCK.sub("", text)
+    text = _THINK_OPEN_TAIL.sub("", text)
+    parts = _THINK_CLOSE.split(text)
+    return parts[-1].strip()
+
+
 def extract_json(text: str) -> Optional[dict]:
-    candidates = []
-    fenced = _FENCE.search(text)
-    if fenced:
-        candidates.append(fenced.group(1))
-    candidates.append(text)
-    start, end = text.find("{"), text.rfind("}")
-    if start != -1 and end > start:
-        candidates.append(text[start : end + 1])
-    for candidate in candidates:
-        try:
-            value = json.loads(candidate.strip())
-        except json.JSONDecodeError:
-            continue
+    cleaned = strip_reasoning(text)
+    try:
+        value = json.loads(cleaned)
         if isinstance(value, dict):
             return value
-    return None
+    except json.JSONDecodeError:
+        pass
+    found = None
+    index = 0
+    while True:
+        start = cleaned.find("{", index)
+        if start == -1:
+            break
+        try:
+            value, end = _DECODER.raw_decode(cleaned, start)
+        except json.JSONDecodeError:
+            index = start + 1
+            continue
+        if isinstance(value, dict):
+            found = value
+        index = end
+    return found
 
 
 def parse_verdict(text: str) -> Optional[Verdict]:
@@ -69,7 +85,7 @@ def parse_queries(text: str, fallback: str) -> list[str]:
 
 
 def parse_route(text: str) -> str:
-    word = text.strip().upper()
+    word = strip_reasoning(text).upper()
     if word.startswith("FOLLOW"):
         return "followup"
     if word.startswith("OTHER"):

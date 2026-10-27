@@ -8,7 +8,7 @@ from langgraph.graph import END, START, StateGraph
 
 from factcheck.config import Settings
 from factcheck.formatting import format_passages, format_reply
-from factcheck.parsing import parse_queries, parse_route, parse_verdict
+from factcheck.parsing import parse_queries, parse_route, parse_verdict, strip_reasoning
 from factcheck.prompts import (
     FOLLOWUP_PROMPT,
     OTHER_REPLY,
@@ -186,7 +186,7 @@ class FactCheckGraph:
                 "message": state["user_input"],
             }
         )
-        return {"reply": raw.strip()}
+        return {"reply": strip_reasoning(raw)}
 
     def _other(self, state: GraphState) -> dict:
         return {"reply": OTHER_REPLY}

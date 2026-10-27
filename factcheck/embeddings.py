@@ -22,7 +22,8 @@ class SentenceTransformerEmbedder:
         self._model = SentenceTransformer(model_name)
         self._batch_size = batch_size
         self._query_instruction = query_instruction
-        self.dim = int(self._model.get_sentence_embedding_dimension())
+        probe = self._model.encode(["dimension probe"], convert_to_numpy=True)
+        self.dim = int(probe.shape[1])
 
     def embed_documents(self, texts: list[str]) -> np.ndarray:
         vectors = self._model.encode(

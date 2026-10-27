@@ -59,6 +59,41 @@ class CheckResult(BaseModel):
     timings: dict[str, float] = Field(default_factory=dict)
 
 
+class AuditedClaim(BaseModel):
+    index: int
+    claim: str
+    section: int = 0
+    result: Optional[CheckResult] = None
+    wording_flags: list[str] = Field(default_factory=list)
+    error: Optional[str] = None
+
+    @property
+    def label(self) -> Optional[str]:
+        return self.result.label if self.result else None
+
+    @property
+    def possibly_overstated(self) -> bool:
+        return bool(self.wording_flags) and self.label != SUPPORTED
+
+
+class AuditReport(BaseModel):
+    items: list[AuditedClaim] = Field(default_factory=list)
+    n_sections: int = 0
+    n_found: int = 0
+    n_checked: int = 0
+    sections_truncated: bool = False
+    claims_truncated: bool = False
+
+    def counts(self) -> dict[str, int]:
+        tally = {SUPPORTED: 0, REFUTED: 0, NOT_ENOUGH_INFO: 0, "ERROR": 0}
+        for item in self.items:
+            tally[item.label or "ERROR"] += 1
+        return tally
+
+    def flagged(self) -> list[AuditedClaim]:
+        return [i for i in self.items if i.label == REFUTED or i.possibly_overstated]
+
+
 class AgentReply(BaseModel):
     text: str
     route: str

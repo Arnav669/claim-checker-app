@@ -44,13 +44,26 @@ class OverlapReranker:
 
 
 class FakeLLM:
-    def __init__(self, verdict_reply: str):
+    def __init__(
+        self,
+        verdict_reply: str,
+        followup_reply: str = "Because the first passage states it directly.",
+        think: bool = False,
+        extract_reply: str = '{"claims": []}',
+    ):
         self.verdict_reply = verdict_reply
+        self.followup_reply = followup_reply
+        self.think = think
+        self.extract_reply = extract_reply
         self.calls: list[str] = []
         self.runnable = RunnableLambda(self._respond)
 
     def kinds(self) -> list[str]:
         return self.calls
+
+    def _message(self, content: str) -> AIMessage:
+        prefix = '<think>pondering {"verdict": "REFUTED"} first</think>\n' if self.think else ""
+        return AIMessage(content=prefix + content)
 
     def _respond(self, prompt_value):
         text = prompt_value.to_string()
@@ -58,21 +71,24 @@ class FakeLLM:
             self.calls.append("router")
             message = text.rsplit("Latest message:", 1)[-1].lower()
             if "hello" in message:
-                return AIMessage(content="OTHER")
+                return self._message("OTHER")
             if "why" in message:
-                return AIMessage(content="FOLLOWUP")
-            return AIMessage(content="CLAIM")
+                return self._message("FOLLOWUP")
+            return self._message("CLAIM")
+        if "You extract checkable factual claims" in text:
+            self.calls.append("extract")
+            return self._message(self.extract_reply)
         if "You write search queries" in text:
             self.calls.append("rewrite")
-            return AIMessage(content='{"queries": ["alternative phrasing one", "alternative phrasing two"]}')
+            return self._message('{"queries": ["alternative phrasing one", "alternative phrasing two"]}')
         if "You are a careful scientific fact-checker" in text:
             self.calls.append("judge")
-            return AIMessage(content=self.verdict_reply)
+            return self._message(self.verdict_reply)
         if "You answer follow-up questions" in text:
             self.calls.append("followup")
-            return AIMessage(content="Because the first passage states it directly.")
+            return self._message(self.followup_reply)
         self.calls.append("unknown")
-        return AIMessage(content="")
+        return self._message("")
 
 
 def sample_docs() -> list[Document]:

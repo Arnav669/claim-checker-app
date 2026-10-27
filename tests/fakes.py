@@ -49,10 +49,12 @@ class FakeLLM:
         verdict_reply: str,
         followup_reply: str = "Because the first passage states it directly.",
         think: bool = False,
+        extract_reply: str = '{"claims": []}',
     ):
         self.verdict_reply = verdict_reply
         self.followup_reply = followup_reply
         self.think = think
+        self.extract_reply = extract_reply
         self.calls: list[str] = []
         self.runnable = RunnableLambda(self._respond)
 
@@ -73,6 +75,9 @@ class FakeLLM:
             if "why" in message:
                 return self._message("FOLLOWUP")
             return self._message("CLAIM")
+        if "You extract checkable factual claims" in text:
+            self.calls.append("extract")
+            return self._message(self.extract_reply)
         if "You write search queries" in text:
             self.calls.append("rewrite")
             return self._message('{"queries": ["alternative phrasing one", "alternative phrasing two"]}')

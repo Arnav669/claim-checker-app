@@ -13,3 +13,4 @@ streamlit
 tqdm
 requests
 pytest
+pypdf

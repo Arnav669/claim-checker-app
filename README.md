@@ -72,6 +72,17 @@ streamlit run app.py
 
 Terminal chat instead of the web UI: `python scripts/chat_cli.py`
 
+## Document Auditor
+
+Besides checking one claim at a time, the app can audit a whole document. It splits the text into sections, asks the LLM to pull out the checkable factual claims, runs each claim through the same retrieve, rerank, gate and judge pipeline, and writes a report with a verdict and cited evidence for every claim.
+
+- Web UI: choose **Audit a document** in the sidebar, upload a PDF, TXT or MD file (or paste text) and press the audit button. The Markdown report can be downloaded.
+- Terminal: `python scripts/audit_doc.py path/to/file.pdf --max-claims 8` writes `reports/audit_<name>.md`.
+
+Claims that use strong wording ("always", "proves", "cures") and are not supported by the evidence are flagged as possibly overstated. This is a keyword heuristic, not a model judgement. "Not enough info" means the knowledge base has nothing on the claim, which does not make the claim false: the knowledge base covers biomedical abstracts only.
+
+Each verified claim costs about 2,000 tokens, so the auditor checks at most `AUDIT_MAX_CLAIMS` claims, spread across the sections, and waits `AUDIT_PAUSE_SECONDS` between claims to stay under the Groq per-minute limit.
+
 ## Evaluation
 
 ```
@@ -118,3 +129,7 @@ pytest
 | `GROQ_MODEL` | `openai/gpt-oss-120b` | Model id used when the provider is Groq |
 | `LLM_PROVIDER` | `groq` | `groq`, `gemini` or `claude` |
 | `LLM_MAX_RPM` | 25 | Client-side request rate cap |
+| `AUDIT_MAX_CLAIMS` | 8 | Claims checked per document audit |
+| `AUDIT_SECTION_WORDS` | 300 | Section size, in words, for claim extraction |
+| `AUDIT_MAX_SECTIONS` | 10 | Sections read per document |
+| `AUDIT_PAUSE_SECONDS` | 8 | Minimum seconds between claim checks (rate-limit guard) |

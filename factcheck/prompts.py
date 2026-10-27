@@ -73,6 +73,26 @@ FOLLOWUP_PROMPT = ChatPromptTemplate.from_messages(
     ]
 )
 
+EXTRACT_PROMPT = ChatPromptTemplate.from_messages(
+    [
+        (
+            "system",
+            "You extract checkable factual claims from a passage of an article. "
+            "A checkable claim is one specific statement about scientific or medical facts, "
+            "such as an effect, a cause, an association, a mechanism or a measured result, "
+            "that published research could support or contradict.\n"
+            "Rules:\n"
+            "- Make every claim self-contained: replace pronouns and vague references with "
+            "the thing they refer to, and keep one fact per claim.\n"
+            "- Keep the original meaning and strength of wording. Do not soften or exaggerate it.\n"
+            "- Skip opinions, predictions, advice, questions, definitions and anecdotes.\n"
+            "- Return at most {max_claims} claims. If there are none, return an empty list.\n"
+            'Reply with JSON only: {{"claims": ["...", "..."]}}',
+        ),
+        ("human", "Passage:\n{passage}"),
+    ]
+)
+
 OTHER_REPLY = (
     "I check scientific claims against a corpus of research abstracts. "
     "Send me a claim, for example: \"Vitamin D supplementation reduces the risk of respiratory infections.\" "

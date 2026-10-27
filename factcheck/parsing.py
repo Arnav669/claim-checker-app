@@ -84,6 +84,18 @@ def parse_queries(text: str, fallback: str) -> list[str]:
     return queries[:3] or [fallback]
 
 
+def parse_claims(text: str, limit: int = 10) -> list[str]:
+    data = extract_json(text)
+    if not data or not isinstance(data.get("claims"), list):
+        return []
+    claims: list[str] = []
+    for item in data["claims"]:
+        claim = " ".join(str(item).split())
+        if len(claim.split()) >= 3:
+            claims.append(claim)
+    return claims[:limit]
+
+
 def parse_route(text: str) -> str:
     word = strip_reasoning(text).upper()
     if word.startswith("FOLLOW"):

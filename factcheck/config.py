@@ -43,6 +43,10 @@ class Settings:
     llm_temperature: float
     llm_max_rpm: float
     history_turns: int
+    audit_max_claims: int
+    audit_section_words: int
+    audit_max_sections: int
+    audit_pause_seconds: float
 
 
 @lru_cache(maxsize=1)
@@ -74,4 +78,8 @@ def get_settings() -> Settings:
         llm_temperature=_env("LLM_TEMPERATURE", 0.0, float),
         llm_max_rpm=_env("LLM_MAX_RPM", 25.0, float),
         history_turns=_env("HISTORY_TURNS", 6, int),
+        audit_max_claims=_env("AUDIT_MAX_CLAIMS", 8, int),
+        audit_section_words=_env("AUDIT_SECTION_WORDS", 300, int),
+        audit_max_sections=_env("AUDIT_MAX_SECTIONS", 10, int),
+        audit_pause_seconds=_env("AUDIT_PAUSE_SECONDS", 8.0, float),
     )
